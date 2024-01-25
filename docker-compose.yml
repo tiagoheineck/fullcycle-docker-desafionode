@@ -1,0 +1,51 @@
+version: '3'
+
+services: 
+
+  app:
+    build: 
+      context: node
+    container_name: app
+    networks: 
+      - node-network
+    tty: true
+    depends_on: 
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "tcp://db:3306"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  nginx:
+    build: 
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx
+    networks: 
+      - node-network
+    depends_on:
+      - app
+    ports: 
+      - "8080:80"
+
+  db:
+    image: mysql:latest
+    container_name: db
+    tty: true
+    healthcheck:
+            test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+            timeout: 20s
+            retries: 10 
+    environment: 
+      - MYSQL_DATABASE=nodedb
+      - MYSQL_ROOT_PASSWORD=root
+    networks: 
+      - node-network
+
+    
+
+networks: 
+  node-network:
+    driver: bridge      
